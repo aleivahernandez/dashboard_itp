@@ -71,7 +71,7 @@ for col in columnas_requeridas:
 
 # --- Filtros Interactivos ---
 
-st.sidebar.image("logo.png", width=150) # Ajustar el ancho del logo
+st.sidebar.image("logo.png", width=100) # Ajustar el ancho del logo
 st.sidebar.header("Filtros")
 regiones_seleccionadas = st.sidebar.multiselect(
     "Filtrar por Región:",
