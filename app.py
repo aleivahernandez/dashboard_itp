@@ -129,3 +129,4 @@ else:
     # Si no se ha seleccionado ninguna región, mostramos la tabla completa
     st.write("Mostrando todos los datos disponibles. Selecciona una región para filtrar.")
     st.dataframe(df_necesidades)
+�
