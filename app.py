@@ -139,9 +139,12 @@ with col3:
             categorias = df_categorias[columna_categorias_tec].str.split(',').explode().str.strip()
             df_bar_counts = categorias.value_counts().reset_index()
             df_bar_counts.columns = ['Categoría', 'Frecuencia']
+            # Ordenar los datos para una mejor visualización horizontal
+            df_bar_counts = df_bar_counts.sort_values('Frecuencia', ascending=True)
 
             fig_bar = px.bar(
-                df_bar_counts, x='Categoría', y='Frecuencia',
+                df_bar_counts, y='Categoría', x='Frecuencia',
+                orientation='h', # Cambiar la orientación a horizontal
                 title="Frecuencia de Categorías Tecnológicas", template="streamlit"
             )
             fig_bar.update_layout(height=500, hoverlabel=dict(align='left'))
