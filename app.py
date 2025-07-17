@@ -53,9 +53,12 @@ columna_region = "Región"
 columna_tematica = "Temática específica"
 columna_necesidad = "Necesidad/desafío tecnológico"
 columna_categorias_tec = "Categorías Tecnológicas Principales"
+columna_impacto = "Impacto potencial"
+columna_innovacion = "Nivel de innovación"
+
 
 # Lista de columnas requeridas para que la app funcione
-columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_necesidad, columna_categorias_tec]
+columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_necesidad, columna_categorias_tec, columna_impacto, columna_innovacion]
 for col in columnas_requeridas:
     if col not in df_necesidades.columns:
         st.error(f"Error: La columna requerida '{col}' no se encontró en la hoja 'db' del archivo Excel.")
@@ -180,7 +183,9 @@ with st.expander("Ver datos originales"):
         "Región",
         "Ejes traccionantes/dimensiones priorizadas",
         "Temática específica",
-        "Necesidad/desafío tecnológico"
+        "Necesidad/desafío tecnológico",
+        "Impacto potencial",
+        "Nivel de innovación"
     ]
     
     columnas_existentes = [col for col in columnas_a_mostrar if col in df_filtrado_general.columns]
@@ -188,4 +193,23 @@ with st.expander("Ver datos originales"):
     if len(columnas_existentes) < len(columnas_a_mostrar):
         st.warning("Algunas de las columnas solicitadas no se encontraron en el archivo Excel.")
     
-    st.dataframe(df_filtrado_general[columnas_existentes])
+    # Mostrar la tabla con las columnas de barras
+    st.dataframe(
+        df_filtrado_general[columnas_existentes],
+        column_config={
+            "Impacto potencial": st.column_config.BarChartColumn(
+                "Impacto Potencial",
+                width="medium",
+                help="Nivel de impacto potencial (1-Bajo, 3-Medio, 5-Alto)",
+                y_min=0,
+                y_max=5,
+            ),
+            "Nivel de innovación": st.column_config.BarChartColumn(
+                "Nivel de Innovación",
+                width="medium",
+                help="Nivel de innovación requerido (1-Bajo, 3-Medio, 5-Alto)",
+                y_min=0,
+                y_max=5,
+            ),
+        }
+    )
