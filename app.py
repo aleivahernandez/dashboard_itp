@@ -11,7 +11,7 @@ import plotly.express as px
 # Esto debe ser el primer comando de Streamlit en tu script.
 st.set_page_config(
     page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="🇨🇱",
+    page_icon="🇨�",
     layout="wide"
 )
 
@@ -38,11 +38,13 @@ def cargar_mapa_chile():
     Carga el archivo GeoJSON con las geometrías de las regiones de Chile
     directamente desde una URL para evitar errores de archivo no encontrado.
     """
-    # URL directa al archivo GeoJSON en un repositorio de GitHub
-    url_mapa = "https://raw.githubusercontent.com/francisco-soto-p/chile-geojson/main/regiones.geojson"
+    # URL directa y estable al archivo GeoJSON en un repositorio de GitHub.
+    url_mapa = "https://raw.githubusercontent.com/M-L-P/chile_geojson/master/regiones/regiones.geojson"
     try:
         # Lee el archivo GeoJSON desde la URL
         gdf = gpd.read_file(url_mapa)
+        # Estandarizar el nombre de la columna de la región para que coincida con el merge
+        gdf.rename(columns={'nombre': 'Region'}, inplace=True)
         return gdf
     except Exception as e:
         st.error(f"Ocurrió un error al cargar el mapa desde la URL: {e}")
@@ -62,7 +64,7 @@ gdf_mapa_chile = cargar_mapa_chile()
 # Las regiones sin datos en el Excel tendrán valores NaN (nulos) en las columnas correspondientes.
 datos_completos_mapa = gdf_mapa_chile.merge(
     df_necesidades,
-    left_on='Region',  # Nombre de la columna de región en el GeoJSON
+    left_on='Region',  # Nombre de la columna de región en el GeoJSON (ahora estandarizado)
     right_on='Región', # Nombre de la columna de región en tu Excel
     how='left'
 )
@@ -82,7 +84,7 @@ with col1:
     # Creamos un selector con todas las regiones del mapa
     region_seleccionada = st.selectbox(
         label="Selecciona una Región:",
-        options=gdf_mapa_chile["Region"].unique(), # Opciones son todas las regiones del mapa
+        options=sorted(gdf_mapa_chile["Region"].unique()), # Opciones son todas las regiones del mapa, ordenadas alfabéticamente
         index=None, # Para que no haya ninguna seleccionada por defecto
         placeholder="Elige una región..."
     )
