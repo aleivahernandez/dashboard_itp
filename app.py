@@ -113,7 +113,8 @@ col1, col2, col3 = st.columns(3)
 color_map = {
     'Maule': '#fbb4ae',      # Rojo Pastel
     'Coquimbo': '#fed9a6',   # Amarillo Pastel
-    'Los Lagos': '#b3e2cd'   # Verde Pastel
+    'Los Lagos': '#b3e2cd',  # Verde Pastel
+    'Total': '#cccccc'       # Gris para el total
 }
 
 with col1:
@@ -122,15 +123,25 @@ with col1:
         st.subheader("Frecuencia de Ejes")
         
         if not df_filtrado_general.empty:
+            # Procesamiento específico para el gráfico de radar
             df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
             all_ejes = df_filtrado_general[columna_ejes].unique()
             all_regiones_filtradas = df_filtrado_general[columna_region].unique()
             full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
             df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
 
+            # Calcular el total para las regiones seleccionadas
             if not df_radar.empty:
+                df_total = df_radar.groupby(columna_ejes, as_index=False)['Cantidad'].sum()
+                df_total[columna_region] = 'Total'
+                # Combinar datos de regiones con el total
+                df_para_grafico = pd.concat([df_radar, df_total], ignore_index=True)
+            else:
+                df_para_grafico = df_radar
+
+            if not df_para_grafico.empty:
                 fig_radar = px.line_polar(
-                    df_radar, r='Cantidad', theta=columna_ejes, color=columna_region,
+                    df_para_grafico, r='Cantidad', theta=columna_ejes, color=columna_region,
                     color_discrete_map=color_map, line_close=True, markers=True,
                     template="streamlit"
                 )
