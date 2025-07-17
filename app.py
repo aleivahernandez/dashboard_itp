@@ -273,10 +273,10 @@ with st.expander("Ver datos originales"):
     
     df_display = df_filtrado_general[columnas_a_mostrar].copy()
 
-    impacto_map = { 5: "🔵 Alto", 3: "🔷 Medio", 1: "⚪ Bajo" }
-    innovacion_map = { 5: "🟠 Alto", 3: "🔶 Medio", 1: "🔸 Bajo" }
+    # Mapeo de semáforo para ambas columnas
+    semaforo_map = { 5: "🔴 Alto", 3: "🟡 Medio", 1: "🟢 Bajo" }
 
-    df_display[columna_impacto] = df_display[columna_impacto].map(impacto_map).fillna("N/A")
-    df_display[columna_innovacion] = df_display[columna_innovacion].map(innovacion_map).fillna("N/A")
+    df_display[columna_impacto] = df_display[columna_impacto].map(semaforo_map).fillna("N/A")
+    df_display[columna_innovacion] = df_display[columna_innovacion].map(semaforo_map).fillna("N/A")
     
     st.dataframe(df_display)
