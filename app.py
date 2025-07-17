@@ -47,131 +47,111 @@ df_necesidades = cargar_datos_excel(nombre_archivo_excel)
 st.title("📊 Necesidades tecnológicas")
 st.markdown("Este dashboard visualiza la frecuencia de las dimensiones priorizadas en cada región piloto.")
 
-# --- Procesamiento de Datos para el Gráfico de Radar ---
-
-# Validar que las columnas necesarias existan en el DataFrame
+# --- Definición de Nombres de Columnas ---
 columna_ejes = "Ejes traccionantes/dimensiones priorizadas"
 columna_region = "Región"
 columna_tematica = "Temática específica"
 columna_necesidad = "Necesidad/desafío tecnológico"
+columna_categorias_tec = "Categorías Tecnológicas Principales"
 
 # Lista de columnas requeridas para que la app funcione
-columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_necesidad]
+columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_necesidad, columna_categorias_tec]
 for col in columnas_requeridas:
     if col not in df_necesidades.columns:
         st.error(f"Error: La columna requerida '{col}' no se encontró en la hoja 'db' del archivo Excel.")
         st.stop()
-
-# Agrupar por región y por eje para contar la frecuencia de cada uno
-df_counts = df_necesidades.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
-
-# --- CREACIÓN DE DATOS COMPLETOS PARA LÍNEAS CONTINUAS ---
-# Obtener todas las categorías únicas para los ejes y las regiones
-all_ejes = df_necesidades[columna_ejes].unique()
-all_regiones = df_necesidades[columna_region].unique()
-
-# Crear una grilla con todas las combinaciones posibles de región y eje
-full_grid = pd.DataFrame(list(product(all_regiones, all_ejes)), columns=[columna_region, columna_ejes])
-
-# Unir la grilla completa con los conteos reales
-df_radar = pd.merge(
-    full_grid,
-    df_counts,
-    on=[columna_region, columna_ejes],
-    how='left'
-)
-
-# Rellenar con 0 las combinaciones que no tenían datos
-df_radar['Cantidad'] = df_radar['Cantidad'].fillna(0)
-
 
 # --- Filtros Interactivos ---
 
 st.sidebar.header("Filtros")
 regiones_seleccionadas = st.sidebar.multiselect(
     "Selecciona una o más regiones para visualizar:",
-    options=df_radar[columna_region].unique(),
-    default=list(df_radar[columna_region].unique()) # Por defecto, todas seleccionadas
+    options=df_necesidades[columna_region].unique(),
+    default=list(df_necesidades[columna_region].unique()) # Por defecto, todas seleccionadas
 )
 
-# Filtrar el dataframe del radar basado en la selección
+# --- Filtrado General de Datos ---
 if regiones_seleccionadas:
-    df_filtrado_radar = df_radar[df_radar[columna_region].isin(regiones_seleccionadas)]
+    df_filtrado_general = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
 else:
-    df_filtrado_radar = df_radar.copy()
+    df_filtrado_general = df_necesidades.copy()
 
 # --- Visualización de Gráficos en Columnas ---
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
+
+# Definir un mapa de colores personalizado para mejorar la visibilidad
+color_map = {
+    'Maule': '#E45756',      # Rojo
+    'Coquimbo': '#F0E442',   # Amarillo
+    'Los Lagos': '#54A24B'   # Verde
+}
 
 with col1:
     with st.container(border=True):
         # --- Visualización del Gráfico de Radar ---
-        st.subheader("Frecuencia de Dimensiones")
+        st.subheader("Frecuencia de Ejes")
+        
+        # Procesamiento específico para el gráfico de radar
+        df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+        all_ejes = df_filtrado_general[columna_ejes].unique()
+        all_regiones_filtradas = df_filtrado_general[columna_region].unique()
+        full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
+        df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
 
-        if not df_filtrado_radar.empty:
-            # Definir un mapa de colores personalizado para mejorar la visibilidad
-            color_map = {
-                'Maule': '#E45756',      # Rojo
-                'Coquimbo': '#F0E442',   # Amarillo
-                'Los Lagos': '#54A24B'   # Verde
-            }
-
+        if not df_radar.empty:
             fig_radar = px.line_polar(
-                df_filtrado_radar,
-                r='Cantidad',
-                theta=columna_ejes,
-                color=columna_region,
-                color_discrete_map=color_map,
-                line_close=True,
-                markers=True,
-                title="Comparativa de Ejes Priorizados por Región",
-                template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
+                df_radar, r='Cantidad', theta=columna_ejes, color=columna_region,
+                color_discrete_map=color_map, line_close=True, markers=True,
+                title="Comparativa de Ejes Priorizados", template="streamlit"
             )
             fig_radar.update_traces(fill='toself', opacity=0.4)
-            # Alinear las etiquetas del hover a la izquierda
-            fig_radar.update_layout(
-                height=600,
-                hoverlabel=dict(align='left')
-            )
+            fig_radar.update_layout(height=500, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_radar, use_container_width=True)
         else:
-            st.warning("Selecciona al menos una región para ver el gráfico de radar.")
+            st.warning("Sin datos para el gráfico de radar.")
 
 with col2:
     with st.container(border=True):
         # --- Visualización del Gráfico Solar ---
         st.subheader("Desglose de Temáticas")
         
-        if regiones_seleccionadas:
-            df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
-        else:
-            df_sunburst_filtrado = df_necesidades.copy()
-        
-        if not df_sunburst_filtrado.empty:
+        if not df_filtrado_general.empty:
             fig_sunburst = px.sunburst(
-                df_sunburst_filtrado,
-                path=[columna_region, columna_ejes, columna_tematica], # NUEVA JERARQUÍA
-                color=columna_region, # Aplicar color por región
-                color_discrete_map=color_map, # Usar el mismo mapa de colores
-                title="Desglose de Temáticas por Región y Eje",
-                template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
+                df_filtrado_general, path=[columna_region, columna_ejes, columna_tematica],
+                color=columna_region, color_discrete_map=color_map,
+                title="Desglose por Región, Eje y Temática", template="streamlit"
             )
-            # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
             fig_sunburst.update_traces(insidetextorientation='radial')
-            # Alinear las etiquetas del hover a la izquierda
-            fig_sunburst.update_layout(
-                height=600,
-                hoverlabel=dict(align='left')
-            )
+            fig_sunburst.update_layout(height=500, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
-            st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
+            st.info("Sin datos para el gráfico solar.")
+
+with col3:
+    with st.container(border=True):
+        # --- Visualización del Gráfico de Barras ---
+        st.subheader("Frecuencia de Categorías")
+
+        # Procesamiento para el gráfico de barras
+        df_categorias = df_filtrado_general.dropna(subset=[columna_categorias_tec])
+        if not df_categorias.empty:
+            categorias = df_categorias[columna_categorias_tec].str.split(',').explode().str.strip()
+            df_bar_counts = categorias.value_counts().reset_index()
+            df_bar_counts.columns = ['Categoría', 'Frecuencia']
+
+            fig_bar = px.bar(
+                df_bar_counts, x='Categoría', y='Frecuencia',
+                title="Frecuencia de Categorías Tecnológicas", template="streamlit"
+            )
+            fig_bar.update_layout(height=500, hoverlabel=dict(align='left'))
+            st.plotly_chart(fig_bar, use_container_width=True)
+        else:
+            st.info("Sin datos para el gráfico de barras.")
+
 
 # --- Visualización de la Tabla de Datos ---
-
 with st.expander("Ver datos originales"):
-    # NUEVAS COLUMNAS PARA LA TABLA
     columnas_a_mostrar = [
         "Región",
         "Ejes traccionantes/dimensiones priorizadas",
@@ -179,14 +159,9 @@ with st.expander("Ver datos originales"):
         "Necesidad/desafío tecnológico"
     ]
     
-    columnas_existentes = [col for col in columnas_a_mostrar if col in df_necesidades.columns]
+    columnas_existentes = [col for col in columnas_a_mostrar if col in df_filtrado_general.columns]
     
     if len(columnas_existentes) < len(columnas_a_mostrar):
         st.warning("Algunas de las columnas solicitadas no se encontraron en el archivo Excel.")
     
-    if regiones_seleccionadas:
-        df_tabla_filtrada = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
-    else:
-        df_tabla_filtrada = df_necesidades
-
-    st.dataframe(df_tabla_filtrada[columnas_existentes])
+    st.dataframe(df_filtrado_general[columnas_existentes])
