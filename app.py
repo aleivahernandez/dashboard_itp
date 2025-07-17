@@ -152,7 +152,7 @@ with col3:
                 x='Frecuencia',
                 orientation='h',
                 color='Frecuencia', # Asignar color según la frecuencia
-                color_continuous_scale=px.colors.sequential.Blues, # Paleta de colores monocromática
+                color_continuous_scale=px.colors.sequential.Plasma, # Paleta de colores con mejor contraste
                 text='Frecuencia', # Añadir el valor numérico a cada barra
                 hover_name='Categoría', # Mostrar nombre completo al pasar el mouse
                 template="streamlit"
