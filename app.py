@@ -93,69 +93,71 @@ else:
 col1, col2 = st.columns(2)
 
 with col1:
-    # --- Visualización del Gráfico de Radar ---
-    st.subheader("Frecuencia de Dimensiones")
+    with st.container(border=True):
+        # --- Visualización del Gráfico de Radar ---
+        st.subheader("Frecuencia de Dimensiones")
 
-    if not df_filtrado_radar.empty:
-        # Definir un mapa de colores personalizado para mejorar la visibilidad
-        color_map = {
-            'Maule': '#E45756',      # Rojo
-            'Coquimbo': '#F0E442',   # Amarillo
-            'Los Lagos': '#54A24B'   # Verde
-        }
+        if not df_filtrado_radar.empty:
+            # Definir un mapa de colores personalizado para mejorar la visibilidad
+            color_map = {
+                'Maule': '#E45756',      # Rojo
+                'Coquimbo': '#F0E442',   # Amarillo
+                'Los Lagos': '#54A24B'   # Verde
+            }
 
-        fig_radar = px.line_polar(
-            df_filtrado_radar,
-            r='Cantidad',
-            theta=columna_ejes,
-            color=columna_region,
-            color_discrete_map=color_map,
-            line_close=True,
-            markers=True,
-            title="Comparativa de Ejes Priorizados por Región",
-            template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
-        )
-        fig_radar.update_traces(fill='toself', opacity=0.4)
-        # Alinear las etiquetas del hover a la izquierda
-        fig_radar.update_layout(
-            height=600,
-            hoverlabel=dict(align='left')
-        )
-        st.plotly_chart(fig_radar, use_container_width=True)
-    else:
-        st.warning("Selecciona al menos una región para ver el gráfico de radar.")
-
-with col2:
-    # --- Visualización del Gráfico Solar ---
-    st.subheader("Desglose de Necesidades")
-
-    if columna_necesidad not in df_necesidades.columns:
-        st.warning(f"La columna '{columna_necesidad}' no se encontró.")
-    else:
-        if regiones_seleccionadas:
-            df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
-        else:
-            df_sunburst_filtrado = df_necesidades.copy()
-        
-        if not df_sunburst_filtrado.empty:
-            fig_sunburst = px.sunburst(
-                df_sunburst_filtrado,
-                path=[columna_region, columna_ejes, columna_necesidad],
-                color=columna_region, # Aplicar color por región
-                color_discrete_map=color_map, # Usar el mismo mapa de colores
-                title="Desglose de Necesidades por Región y Eje",
+            fig_radar = px.line_polar(
+                df_filtrado_radar,
+                r='Cantidad',
+                theta=columna_ejes,
+                color=columna_region,
+                color_discrete_map=color_map,
+                line_close=True,
+                markers=True,
+                title="Comparativa de Ejes Priorizados por Región",
                 template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
             )
-            # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
-            fig_sunburst.update_traces(insidetextorientation='radial')
+            fig_radar.update_traces(fill='toself', opacity=0.4)
             # Alinear las etiquetas del hover a la izquierda
-            fig_sunburst.update_layout(
+            fig_radar.update_layout(
                 height=600,
                 hoverlabel=dict(align='left')
             )
-            st.plotly_chart(fig_sunburst, use_container_width=True)
+            st.plotly_chart(fig_radar, use_container_width=True)
         else:
-            st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
+            st.warning("Selecciona al menos una región para ver el gráfico de radar.")
+
+with col2:
+    with st.container(border=True):
+        # --- Visualización del Gráfico Solar ---
+        st.subheader("Desglose de Necesidades")
+
+        if columna_necesidad not in df_necesidades.columns:
+            st.warning(f"La columna '{columna_necesidad}' no se encontró.")
+        else:
+            if regiones_seleccionadas:
+                df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
+            else:
+                df_sunburst_filtrado = df_necesidades.copy()
+            
+            if not df_sunburst_filtrado.empty:
+                fig_sunburst = px.sunburst(
+                    df_sunburst_filtrado,
+                    path=[columna_region, columna_ejes, columna_necesidad],
+                    color=columna_region, # Aplicar color por región
+                    color_discrete_map=color_map, # Usar el mismo mapa de colores
+                    title="Desglose de Necesidades por Región y Eje",
+                    template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
+                )
+                # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
+                fig_sunburst.update_traces(insidetextorientation='radial')
+                # Alinear las etiquetas del hover a la izquierda
+                fig_sunburst.update_layout(
+                    height=600,
+                    hoverlabel=dict(align='left')
+                )
+                st.plotly_chart(fig_sunburst, use_container_width=True)
+            else:
+                st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
 
 # --- Visualización de la Tabla de Datos ---
 
