@@ -103,7 +103,7 @@ with col1:
             fig_radar = px.line_polar(
                 df_radar, r='Cantidad', theta=columna_ejes, color=columna_region,
                 color_discrete_map=color_map, line_close=True, markers=True,
-                title="Comparativa de Ejes Priorizados", template="streamlit"
+                template="streamlit"
             )
             fig_radar.update_traces(fill='toself', opacity=0.4)
             fig_radar.update_layout(height=500, hoverlabel=dict(align='left'))
@@ -120,7 +120,7 @@ with col2:
             fig_sunburst = px.sunburst(
                 df_filtrado_general, path=[columna_region, columna_ejes, columna_tematica],
                 color=columna_region, color_discrete_map=color_map,
-                title="Desglose por Región, Eje y Temática", template="streamlit"
+                template="streamlit"
             )
             fig_sunburst.update_traces(insidetextorientation='radial')
             fig_sunburst.update_layout(height=500, hoverlabel=dict(align='left'))
@@ -139,15 +139,29 @@ with col3:
             categorias = df_categorias[columna_categorias_tec].str.split(',').explode().str.strip()
             df_bar_counts = categorias.value_counts().reset_index()
             df_bar_counts.columns = ['Categoría', 'Frecuencia']
+            
+            # Crear una columna con etiquetas truncadas para el eje Y
+            df_bar_counts['Etiqueta_Truncada'] = df_bar_counts['Categoría'].apply(lambda x: (x[:15] + '...') if len(x) > 15 else x)
+            
             # Ordenar los datos para una mejor visualización horizontal
             df_bar_counts = df_bar_counts.sort_values('Frecuencia', ascending=True)
 
             fig_bar = px.bar(
-                df_bar_counts, y='Categoría', x='Frecuencia',
-                orientation='h', # Cambiar la orientación a horizontal
-                title="Frecuencia de Categorías Tecnológicas", template="streamlit"
+                df_bar_counts, 
+                y='Etiqueta_Truncada', # Usar etiquetas truncadas en el eje
+                x='Frecuencia',
+                orientation='h',
+                color='Categoría', # Asignar un color por cada barra
+                hover_name='Categoría', # Mostrar nombre completo al pasar el mouse
+                template="streamlit"
             )
-            fig_bar.update_layout(height=500, hoverlabel=dict(align='left'))
+            # Ocultar la leyenda de colores (redundante) y ajustar layout
+            fig_bar.update_layout(
+                height=500, 
+                hoverlabel=dict(align='left'),
+                showlegend=False,
+                yaxis_title=None # Ocultar el título del eje Y
+            )
             st.plotly_chart(fig_bar, use_container_width=True)
         else:
             st.info("Sin datos para el gráfico de barras.")
