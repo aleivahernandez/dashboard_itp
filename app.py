@@ -116,7 +116,11 @@ with col1:
             template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
         )
         fig_radar.update_traces(fill='toself', opacity=0.4)
-        fig_radar.update_layout(height=600)
+        # Alinear las etiquetas del hover a la izquierda
+        fig_radar.update_layout(
+            height=600,
+            hoverlabel=dict(align='left')
+        )
         st.plotly_chart(fig_radar, use_container_width=True)
     else:
         st.warning("Selecciona al menos una región para ver el gráfico de radar.")
@@ -144,7 +148,11 @@ with col2:
             )
             # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
             fig_sunburst.update_traces(insidetextorientation='radial')
-            fig_sunburst.update_layout(height=600)
+            # Alinear las etiquetas del hover a la izquierda
+            fig_sunburst.update_layout(
+                height=600,
+                hoverlabel=dict(align='left')
+            )
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
             st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
