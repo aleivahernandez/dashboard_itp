@@ -135,7 +135,7 @@ with col1:
                     template="streamlit"
                 )
                 fig_radar.update_traces(fill='toself', opacity=0.5)
-                fig_radar.update_layout(height=400, hoverlabel=dict(align='left'))
+                fig_radar.update_layout(height=350, hoverlabel=dict(align='left'))
                 st.plotly_chart(fig_radar, use_container_width=True)
             else:
                 st.warning("Sin datos para el gráfico de radar con los filtros actuales.")
@@ -155,7 +155,7 @@ with col2:
                 template="streamlit"
             )
             fig_sunburst.update_traces(insidetextorientation='radial')
-            fig_sunburst.update_layout(height=400, hoverlabel=dict(align='left'))
+            fig_sunburst.update_layout(height=350, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
             st.info("Sin datos para el gráfico solar con los filtros actuales.")
@@ -180,7 +180,7 @@ with col3:
                 text='Frecuencia', hover_name='Categoría', template="streamlit"
             )
             fig_bar.update_layout(
-                height=400, hoverlabel=dict(align='left'), coloraxis_showscale=False,
+                height=350, hoverlabel=dict(align='left'), coloraxis_showscale=False,
                 yaxis_title=None, xaxis_visible=False
             )
             fig_bar.update_yaxes(ticktext=df_bar_counts['Etiqueta_Truncada'], tickvals=df_bar_counts['Categoría'])
