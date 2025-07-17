@@ -80,11 +80,11 @@ else:
 
 col1, col2, col3 = st.columns(3)
 
-# Definir un mapa de colores personalizado para mejorar la visibilidad
+# Definir un mapa de colores personalizado con tonos pastel
 color_map = {
-    'Maule': '#E45756',      # Rojo
-    'Coquimbo': '#F0E442',   # Amarillo
-    'Los Lagos': '#54A24B'   # Verde
+    'Maule': '#fbb4ae',      # Rojo Pastel
+    'Coquimbo': '#fed9a6',   # Amarillo Pastel
+    'Los Lagos': '#b3e2cd'   # Verde Pastel
 }
 
 with col1:
@@ -105,7 +105,7 @@ with col1:
                 color_discrete_map=color_map, line_close=True, markers=True,
                 template="streamlit"
             )
-            fig_radar.update_traces(fill='toself', opacity=0.4)
+            fig_radar.update_traces(fill='toself', opacity=0.5) # Aumentar un poco la opacidad para pasteles
             fig_radar.update_layout(height=500, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_radar, use_container_width=True)
         else:
