@@ -119,12 +119,7 @@ else:
 
 # --- Visualización de la Tabla de Datos ---
 
-with st.expander("Ver datos tabulados"):
-    st.write("Datos procesados para la generación del gráfico (con ceros para datos faltantes):")
-    # Mostrar la tabla de datos procesados que alimenta el gráfico
-    st.dataframe(df_filtrado)
-
-    st.write("Datos originales del archivo Excel:")
+with st.expander("Ver datos originales"):
     # Definir las columnas que quieres mostrar
     columnas_a_mostrar = [
         "Región",
