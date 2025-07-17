@@ -44,6 +44,7 @@ st.markdown("Este dashboard visualiza la frecuencia de las dimensiones priorizad
 # Validar que las columnas necesarias existan en el DataFrame
 columna_ejes = "Ejes traccionantes/dimensiones priorizadas"
 columna_region = "Región"
+columna_necesidad = "Necesidad/desafío tecnológico"
 
 if columna_ejes not in df_necesidades.columns or columna_region not in df_necesidades.columns:
     st.error(f"El archivo Excel debe contener las columnas '{columna_ejes}' y '{columna_region}'.")
@@ -125,6 +126,29 @@ if not df_filtrado_radar.empty:
 else:
     st.warning("No hay datos para mostrar con las regiones seleccionadas. Por favor, elige al menos una región en el filtro de la barra lateral.")
 
+# --- Visualización del Gráfico Solar ---
+
+st.subheader("Gráfico Solar: Desglose Jerárquico de Necesidades")
+
+if columna_necesidad not in df_necesidades.columns:
+    st.warning(f"La columna '{columna_necesidad}' no se encontró, no se puede generar el gráfico solar.")
+else:
+    # Filtrar los datos originales para el gráfico solar
+    if regiones_seleccionadas:
+        df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
+    else:
+        df_sunburst_filtrado = df_necesidades.copy()
+    
+    if not df_sunburst_filtrado.empty:
+        fig_sunburst = px.sunburst(
+            df_sunburst_filtrado,
+            path=[columna_region, columna_ejes, columna_necesidad],
+            title="Desglose de Necesidades por Región y Eje"
+        )
+        fig_sunburst.update_layout(height=700)
+        st.plotly_chart(fig_sunburst, use_container_width=True)
+    else:
+        st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
 
 # --- Visualización de la Tabla de Datos ---
 
