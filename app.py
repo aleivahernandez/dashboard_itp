@@ -148,10 +148,10 @@ with col3:
 
             fig_bar = px.bar(
                 df_bar_counts, 
-                y='Etiqueta_Truncada', # Usar etiquetas truncadas en el eje
+                y='Categoría', # Usar la categoría original y única para el eje Y para evitar superposiciones
                 x='Frecuencia',
                 orientation='h',
-                color='Frecuencia', # Asignar color según la frecuencia para evitar superposición
+                color='Frecuencia', # Asignar color según la frecuencia
                 color_continuous_scale=px.colors.sequential.Viridis, # Paleta de colores
                 text='Frecuencia', # Añadir el valor numérico a cada barra
                 hover_name='Categoría', # Mostrar nombre completo al pasar el mouse
@@ -165,6 +165,8 @@ with col3:
                 yaxis_title=None, # Ocultar el título del eje Y
                 xaxis_visible=False # Ocultar el eje X (Frecuencia)
             )
+            # Usar las etiquetas truncadas solo para la visualización del eje Y
+            fig_bar.update_yaxes(ticktext=df_bar_counts['Etiqueta_Truncada'], tickvals=df_bar_counts['Categoría'])
             # Ajustar la posición y estilo del texto en las barras
             fig_bar.update_traces(textposition='outside', textfont_size=12)
             st.plotly_chart(fig_bar, use_container_width=True)
