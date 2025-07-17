@@ -106,7 +106,7 @@ with col1:
                 template="streamlit"
             )
             fig_radar.update_traces(fill='toself', opacity=0.5) # Aumentar un poco la opacidad para pasteles
-            fig_radar.update_layout(height=500, hoverlabel=dict(align='left'))
+            fig_radar.update_layout(height=400, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_radar, use_container_width=True)
         else:
             st.warning("Sin datos para el gráfico de radar.")
@@ -123,7 +123,7 @@ with col2:
                 template="streamlit"
             )
             fig_sunburst.update_traces(insidetextorientation='radial')
-            fig_sunburst.update_layout(height=500, hoverlabel=dict(align='left'))
+            fig_sunburst.update_layout(height=400, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
             st.info("Sin datos para el gráfico solar.")
@@ -159,7 +159,7 @@ with col3:
             )
             # Ocultar la leyenda de colores (redundante) y ajustar layout
             fig_bar.update_layout(
-                height=500, 
+                height=400, 
                 hoverlabel=dict(align='left'),
                 coloraxis_showscale=False, # Ocultar la barra de escala de colores
                 yaxis_title=None, # Ocultar el título del eje Y
