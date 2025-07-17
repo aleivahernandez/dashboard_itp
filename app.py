@@ -96,9 +96,12 @@ else:
 
 # Aplicar el segundo filtro de categorías tecnológicas si se ha seleccionado alguna
 if categorias_seleccionadas:
-    # Crear un patrón de búsqueda para encontrar filas que contengan CUALQUIERA de las categorías seleccionadas
-    pattern = '|'.join(f'({cat})' for cat in categorias_seleccionadas)
-    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_categorias_tec].str.contains(pattern, na=False)]
+    # Se itera sobre cada categoría seleccionada para construir una máscara booleana.
+    # Esto asegura que la búsqueda sea por contenido ("contains") y no por coincidencia exacta.
+    mask = df_filtrado_general[columna_categorias_tec].apply(
+        lambda x: any(cat in str(x) for cat in categorias_seleccionadas)
+    )
+    df_filtrado_general = df_filtrado_general[mask]
 
 
 # --- Visualización de Gráficos en Columnas ---
