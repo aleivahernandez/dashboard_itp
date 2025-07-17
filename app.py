@@ -36,18 +36,23 @@ def cargar_datos_excel(archivo_excel):
 def cargar_mapa_chile():
     """
     Carga el archivo GeoJSON con las geometrías de las regiones de Chile
-    directamente desde una URL para evitar errores de archivo no encontrado.
+    directamente desde el repositorio de GitHub.
     """
-    # URL directa y estable al archivo GeoJSON en un repositorio de GitHub.
-    url_mapa = "https://raw.githubusercontent.com/M-L-P/chile_geojson/master/regiones/regiones.geojson"
+    nombre_archivo_mapa = "regiones_chile.geojson"
     try:
-        # Lee el archivo GeoJSON desde la URL
-        gdf = gpd.read_file(url_mapa)
+        # Lee el archivo GeoJSON localmente desde el repositorio.
+        gdf = gpd.read_file(nombre_archivo_mapa)
         # Estandarizar el nombre de la columna de la región para que coincida con el merge
-        gdf.rename(columns={'nombre': 'Region'}, inplace=True)
+        # El archivo puede tener 'nombre' o 'Region' como columna de nombre.
+        if 'nombre' in gdf.columns:
+            gdf.rename(columns={'nombre': 'Region'}, inplace=True)
         return gdf
+    except FileNotFoundError:
+        st.error(f"Error: No se encontró el archivo del mapa '{nombre_archivo_mapa}'.")
+        st.error("Por favor, asegúrate de que el archivo esté en tu repositorio de GitHub y que el nombre sea correcto.")
+        st.stop()
     except Exception as e:
-        st.error(f"Ocurrió un error al cargar el mapa desde la URL: {e}")
+        st.error(f"Ocurrió un error al leer el archivo del mapa: {e}")
         st.stop()
 
 # --- Carga y Preparación de Datos ---
@@ -129,3 +134,4 @@ else:
     # Si no se ha seleccionado ninguna región, mostramos la tabla completa
     st.write("Mostrando todos los datos disponibles. Selecciona una región para filtrar.")
     st.dataframe(df_necesidades)
+�
