@@ -11,7 +11,7 @@ import plotly.express as px
 # Esto debe ser el primer comando de Streamlit en tu script.
 st.set_page_config(
     page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="🇨�",
+    page_icon="🇨🇱",
     layout="wide"
 )
 
@@ -134,4 +134,3 @@ else:
     # Si no se ha seleccionado ninguna región, mostramos la tabla completa
     st.write("Mostrando todos los datos disponibles. Selecciona una región para filtrar.")
     st.dataframe(df_necesidades)
-�
