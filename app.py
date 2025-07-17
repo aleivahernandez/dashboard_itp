@@ -140,8 +140,8 @@ with col2:
                 color_discrete_map=color_map, # Usar el mismo mapa de colores
                 title="Desglose de Necesidades por Región y Eje"
             )
-            # Forzar que todo el texto DENTRO de los sectores se muestre de manera horizontal
-            fig_sunburst.update_traces(insidetextorientation='horizontal')
+            # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
+            fig_sunburst.update_traces(insidetextorientation='radial')
             fig_sunburst.update_layout(height=600)
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
