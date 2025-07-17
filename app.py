@@ -100,7 +100,7 @@ with col1:
         # Definir un mapa de colores personalizado para mejorar la visibilidad
         color_map = {
             'Maule': '#E45756',      # Rojo
-            'Coquimbo': '#4C78A8',   # Azul
+            'Coquimbo': '#F0E442',   # Amarillo
             'Los Lagos': '#54A24B'   # Verde
         }
 
