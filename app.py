@@ -151,7 +151,9 @@ with col3:
                 y='Etiqueta_Truncada', # Usar etiquetas truncadas en el eje
                 x='Frecuencia',
                 orientation='h',
-                color='Categoría', # Asignar un color por cada barra
+                color='Frecuencia', # Asignar color según la frecuencia para evitar superposición
+                color_continuous_scale=px.colors.sequential.Viridis, # Paleta de colores
+                text='Frecuencia', # Añadir el valor numérico a cada barra
                 hover_name='Categoría', # Mostrar nombre completo al pasar el mouse
                 template="streamlit"
             )
@@ -159,9 +161,12 @@ with col3:
             fig_bar.update_layout(
                 height=500, 
                 hoverlabel=dict(align='left'),
-                showlegend=False,
-                yaxis_title=None # Ocultar el título del eje Y
+                coloraxis_showscale=False, # Ocultar la barra de escala de colores
+                yaxis_title=None, # Ocultar el título del eje Y
+                xaxis_visible=False # Ocultar el eje X (Frecuencia)
             )
+            # Ajustar la posición y estilo del texto en las barras
+            fig_bar.update_traces(textposition='outside', textfont_size=12)
             st.plotly_chart(fig_bar, use_container_width=True)
         else:
             st.info("Sin datos para el gráfico de barras.")
