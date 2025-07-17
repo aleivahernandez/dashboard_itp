@@ -34,16 +34,18 @@ def cargar_datos_excel(archivo_excel):
 
 @st.cache_data
 def cargar_mapa_chile():
-    """Carga el archivo GeoJSON con las geometrías de las regiones de Chile."""
+    """
+    Carga el archivo GeoJSON con las geometrías de las regiones de Chile
+    directamente desde una URL para evitar errores de archivo no encontrado.
+    """
+    # URL directa al archivo GeoJSON en un repositorio de GitHub
+    url_mapa = "https://raw.githubusercontent.com/francisco-soto-p/chile-geojson/main/regiones.geojson"
     try:
-        # Lee el archivo GeoJSON.
-        gdf = gpd.read_file("regiones_chile.geojson")
+        # Lee el archivo GeoJSON desde la URL
+        gdf = gpd.read_file(url_mapa)
         return gdf
-    except FileNotFoundError:
-        st.error("Error: No se encontró el archivo 'regiones_chile.geojson'. Asegúrate de que esté en el repositorio de GitHub.")
-        st.stop()
     except Exception as e:
-        st.error(f"Ocurrió un error al leer el archivo del mapa: {e}")
+        st.error(f"Ocurrió un error al cargar el mapa desde la URL: {e}")
         st.stop()
 
 # --- Carga y Preparación de Datos ---
@@ -125,4 +127,3 @@ else:
     # Si no se ha seleccionado ninguna región, mostramos la tabla completa
     st.write("Mostrando todos los datos disponibles. Selecciona una región para filtrar.")
     st.dataframe(df_necesidades)
-
