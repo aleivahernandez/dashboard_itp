@@ -9,7 +9,7 @@ from itertools import product
 
 # --- Configuración de la Página ---
 st.set_page_config(
-    page_title="Dashboard de Ejes Priorizados",
+    page_title="Dashboard de Necesidades Tecnológicas",
     page_icon="📊",
     layout="wide"
 )
@@ -36,7 +36,7 @@ df_necesidades = cargar_datos_excel(nombre_archivo_excel)
 
 # --- Interfaz de Usuario del Dashboard ---
 
-st.title("📊 Dashboard de Ejes Traccionantes por Región")
+st.title("📊 Necesidades tecnológicas")
 st.markdown("Este dashboard visualiza la frecuencia de las dimensiones priorizadas en cada región piloto.")
 
 # --- Procesamiento de Datos para el Gráfico de Radar ---
