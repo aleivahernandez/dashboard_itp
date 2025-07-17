@@ -22,6 +22,8 @@ def cargar_datos_excel(archivo_excel):
     try:
         # Leer la hoja específica "db" del archivo
         df = pd.read_excel(archivo_excel, sheet_name="db", engine='openpyxl')
+        # Limpiar espacios extra en los nombres de las columnas
+        df.columns = df.columns.str.strip()
         return df
     except FileNotFoundError:
         st.error(f"Error: No se encontró el archivo '{archivo_excel}'. Asegúrate de que esté en el repositorio de GitHub.")
@@ -62,6 +64,9 @@ columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_n
 for col in columnas_requeridas:
     if col not in df_necesidades.columns:
         st.error(f"Error: La columna requerida '{col}' no se encontró en la hoja 'db' del archivo Excel.")
+        # Mensaje de depuración mejorado: muestra las columnas que SÍ se encontraron
+        st.warning(f"Las columnas encontradas en el archivo son: {list(df_necesidades.columns)}")
+        st.info("Sugerencia: Verifica que el nombre de la columna en el archivo Excel sea exactamente igual (incluyendo mayúsculas y espacios). Si acabas de subir el archivo, intenta limpiar la caché de la app (Manage app -> Clear cache).")
         st.stop()
 
 # --- Filtros Interactivos ---
@@ -188,28 +193,22 @@ with st.expander("Ver datos originales"):
         "Nivel de innovación"
     ]
     
-    columnas_existentes = [col for col in columnas_a_mostrar if col in df_filtrado_general.columns]
+    df_display = df_filtrado_general[columnas_a_mostrar].copy()
+
+    # Mapeo para Impacto Potencial (Azules)
+    impacto_map = {
+        5: "🔵 Alto",
+        3: "🔷 Medio",
+        1: "⚪ Bajo"
+    }
+    # Mapeo para Nivel de Innovación (Naranjos)
+    innovacion_map = {
+        5: "🟠 Alto",
+        3: "🔶 Medio",
+        1: "🔸 Bajo"
+    }
+
+    df_display[columna_impacto] = df_display[columna_impacto].map(impacto_map).fillna("N/A")
+    df_display[columna_innovacion] = df_display[columna_innovacion].map(innovacion_map).fillna("N/A")
     
-    if len(columnas_existentes) < len(columnas_a_mostrar):
-        st.warning("Algunas de las columnas solicitadas no se encontraron en el archivo Excel.")
-    
-    # Mostrar la tabla con las columnas de barras
-    st.dataframe(
-        df_filtrado_general[columnas_existentes],
-        column_config={
-            "Impacto potencial": st.column_config.BarChartColumn(
-                "Impacto Potencial",
-                width="medium",
-                help="Nivel de impacto potencial (1-Bajo, 3-Medio, 5-Alto)",
-                y_min=0,
-                y_max=5,
-            ),
-            "Nivel de innovación": st.column_config.BarChartColumn(
-                "Nivel de Innovación",
-                width="medium",
-                help="Nivel de innovación requerido (1-Bajo, 3-Medio, 5-Alto)",
-                y_min=0,
-                y_max=5,
-            ),
-        }
-    )
+    st.dataframe(df_display)
