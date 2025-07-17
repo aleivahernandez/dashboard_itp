@@ -114,7 +114,7 @@ color_map = {
     'Maule': '#fbb4ae',      # Rojo Pastel
     'Coquimbo': '#fed9a6',   # Amarillo Pastel
     'Los Lagos': '#b3e2cd',  # Verde Pastel
-    'Total': '#b19cd9'       # Morado Pastel
+    'Total': '#c5b0d5'       # Morado Pastel para el total
 }
 
 with col1:
@@ -125,24 +125,21 @@ with col1:
         if not df_filtrado_general.empty:
             # Procesamiento específico para el gráfico de radar
             df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
-            all_ejes = df_filtrado_general[columna_ejes].unique()
+            # Usar todos los ejes del dataframe original para asegurar la continuidad de la línea "Total"
+            all_ejes = df_necesidades[columna_ejes].unique()
             all_regiones_filtradas = df_filtrado_general[columna_region].unique()
-            full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
-            df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
+            
+            if len(all_regiones_filtradas) > 0:
+                full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
+                df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
 
-            # Calcular el total para las regiones seleccionadas
-            if not df_radar.empty:
-                df_total_raw = df_radar.groupby(columna_ejes, as_index=False)['Cantidad'].sum()
-                # Asegurar que el total tenga todos los ejes para una línea continua
-                all_ejes_df = pd.DataFrame({columna_ejes: all_ejes})
-                df_total = pd.merge(all_ejes_df, df_total_raw, on=columna_ejes, how='left').fillna(0)
+                # Calcular el total para las regiones seleccionadas
+                df_total = df_radar.groupby(columna_ejes, as_index=False)['Cantidad'].sum()
                 df_total[columna_region] = 'Total'
+                
                 # Combinar datos de regiones con el total
                 df_para_grafico = pd.concat([df_radar, df_total], ignore_index=True)
-            else:
-                df_para_grafico = df_radar
 
-            if not df_para_grafico.empty:
                 fig_radar = px.line_polar(
                     df_para_grafico, r='Cantidad', theta=columna_ejes, color=columna_region,
                     color_discrete_map=color_map, line_close=True, markers=True,
@@ -186,4 +183,41 @@ with col3:
             df_bar_counts.columns = ['Categoría', 'Frecuencia']
             
             df_bar_counts['Etiqueta_Truncada'] = df_bar_counts['Categoría'].apply(lambda x: (x[:15] + '...') if len(x) > 15 else x)
-            df_bar_counts = df_bar_counts.sort_values('Frecuencia', ascendi
+            df_bar_counts = df_bar_counts.sort_values('Frecuencia', ascending=True)
+
+            fig_bar = px.bar(
+                df_bar_counts, y='Categoría', x='Frecuencia', orientation='h',
+                color='Frecuencia', color_continuous_scale=px.colors.sequential.GnBu,
+                text='Frecuencia', hover_name='Categoría', template="streamlit"
+            )
+            fig_bar.update_layout(
+                height=500, hoverlabel=dict(align='left'), coloraxis_showscale=False,
+                yaxis_title=None, xaxis_visible=False
+            )
+            fig_bar.update_yaxes(ticktext=df_bar_counts['Etiqueta_Truncada'], tickvals=df_bar_counts['Categoría'])
+            fig_bar.update_traces(textposition='outside', textfont_size=12)
+            st.plotly_chart(fig_bar, use_container_width=True)
+        else:
+            st.info("Sin datos para el gráfico de barras con los filtros actuales.")
+
+
+# --- Visualización de la Tabla de Datos ---
+with st.expander("Ver datos originales"):
+    columnas_a_mostrar = [
+        "Región",
+        "Ejes traccionantes/dimensiones priorizadas",
+        "Temática específica",
+        "Necesidad/desafío tecnológico",
+        "Impacto potencial",
+        "Nivel de innovación"
+    ]
+    
+    df_display = df_filtrado_general[columnas_a_mostrar].copy()
+
+    impacto_map = { 5: "🔵 Alto", 3: "🔷 Medio", 1: "⚪ Bajo" }
+    innovacion_map = { 5: "🟠 Alto", 3: "🔶 Medio", 1: "🔸 Bajo" }
+
+    df_display[columna_impacto] = df_display[columna_impacto].map(impacto_map).fillna("N/A")
+    df_display[columna_innovacion] = df_display[columna_innovacion].map(innovacion_map).fillna("N/A")
+    
+    st.dataframe(df_display)
