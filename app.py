@@ -125,5 +125,19 @@ with st.expander("Ver datos tabulados"):
     st.dataframe(df_filtrado)
 
     st.write("Datos originales del archivo Excel:")
-    # Mostrar la tabla original completa
-    st.dataframe(df_necesidades)
+    # Definir las columnas que quieres mostrar
+    columnas_a_mostrar = [
+        "Región",
+        "Ejes traccionantes/dimensiones priorizadas",
+        "Necesidad/desafío tecnológico",
+        "Contexto tecnológico preliminar"
+    ]
+    
+    # Verificar que las columnas existan antes de intentar mostrarlas
+    columnas_existentes = [col for col in columnas_a_mostrar if col in df_necesidades.columns]
+    
+    if len(columnas_existentes) < len(columnas_a_mostrar):
+        st.warning("Algunas de las columnas solicitadas no se encontraron en el archivo Excel.")
+    
+    # Mostrar la tabla original solo con las columnas seleccionadas
+    st.dataframe(df_necesidades[columnas_existentes])
