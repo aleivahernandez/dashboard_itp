@@ -18,13 +18,21 @@ st.set_page_config(
 
 @st.cache_data
 def cargar_datos_excel(archivo_excel):
-    """Carga los datos desde el archivo Excel especificado."""
+    """Carga los datos desde la hoja 'db' del archivo Excel especificado."""
     try:
-        df = pd.read_excel(archivo_excel, engine='openpyxl')
+        # Leer la hoja específica "db" del archivo
+        df = pd.read_excel(archivo_excel, sheet_name="db", engine='openpyxl')
         return df
     except FileNotFoundError:
         st.error(f"Error: No se encontró el archivo '{archivo_excel}'. Asegúrate de que esté en el repositorio de GitHub.")
         st.stop()
+    except ValueError as e:
+        if "Worksheet named 'db' not found" in str(e):
+            st.error("Error: No se encontró la hoja 'db' en el archivo Excel. Por favor, verifica el nombre de la hoja.")
+            st.stop()
+        else:
+            st.error(f"Ocurrió un error al leer el archivo Excel: {e}")
+            st.stop()
     except Exception as e:
         st.error(f"Ocurrió un error al leer el archivo Excel: {e}")
         st.stop()
@@ -44,11 +52,15 @@ st.markdown("Este dashboard visualiza la frecuencia de las dimensiones priorizad
 # Validar que las columnas necesarias existan en el DataFrame
 columna_ejes = "Ejes traccionantes/dimensiones priorizadas"
 columna_region = "Región"
+columna_tematica = "Temática específica"
 columna_necesidad = "Necesidad/desafío tecnológico"
 
-if columna_ejes not in df_necesidades.columns or columna_region not in df_necesidades.columns:
-    st.error(f"El archivo Excel debe contener las columnas '{columna_ejes}' y '{columna_region}'.")
-    st.stop()
+# Lista de columnas requeridas para que la app funcione
+columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_necesidad]
+for col in columnas_requeridas:
+    if col not in df_necesidades.columns:
+        st.error(f"Error: La columna requerida '{col}' no se encontró en la hoja 'db' del archivo Excel.")
+        st.stop()
 
 # Agrupar por región y por eje para contar la frecuencia de cada uno
 df_counts = df_necesidades.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
@@ -129,44 +141,42 @@ with col1:
 with col2:
     with st.container(border=True):
         # --- Visualización del Gráfico Solar ---
-        st.subheader("Desglose de Necesidades")
-
-        if columna_necesidad not in df_necesidades.columns:
-            st.warning(f"La columna '{columna_necesidad}' no se encontró.")
+        st.subheader("Desglose de Temáticas")
+        
+        if regiones_seleccionadas:
+            df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
         else:
-            if regiones_seleccionadas:
-                df_sunburst_filtrado = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
-            else:
-                df_sunburst_filtrado = df_necesidades.copy()
-            
-            if not df_sunburst_filtrado.empty:
-                fig_sunburst = px.sunburst(
-                    df_sunburst_filtrado,
-                    path=[columna_region, columna_ejes, columna_necesidad],
-                    color=columna_region, # Aplicar color por región
-                    color_discrete_map=color_map, # Usar el mismo mapa de colores
-                    title="Desglose de Necesidades por Región y Eje",
-                    template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
-                )
-                # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
-                fig_sunburst.update_traces(insidetextorientation='radial')
-                # Alinear las etiquetas del hover a la izquierda
-                fig_sunburst.update_layout(
-                    height=600,
-                    hoverlabel=dict(align='left')
-                )
-                st.plotly_chart(fig_sunburst, use_container_width=True)
-            else:
-                st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
+            df_sunburst_filtrado = df_necesidades.copy()
+        
+        if not df_sunburst_filtrado.empty:
+            fig_sunburst = px.sunburst(
+                df_sunburst_filtrado,
+                path=[columna_region, columna_ejes, columna_tematica], # NUEVA JERARQUÍA
+                color=columna_region, # Aplicar color por región
+                color_discrete_map=color_map, # Usar el mismo mapa de colores
+                title="Desglose de Temáticas por Región y Eje",
+                template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
+            )
+            # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
+            fig_sunburst.update_traces(insidetextorientation='radial')
+            # Alinear las etiquetas del hover a la izquierda
+            fig_sunburst.update_layout(
+                height=600,
+                hoverlabel=dict(align='left')
+            )
+            st.plotly_chart(fig_sunburst, use_container_width=True)
+        else:
+            st.info("No hay datos para mostrar en el gráfico solar con los filtros seleccionados.")
 
 # --- Visualización de la Tabla de Datos ---
 
 with st.expander("Ver datos originales"):
+    # NUEVAS COLUMNAS PARA LA TABLA
     columnas_a_mostrar = [
         "Región",
         "Ejes traccionantes/dimensiones priorizadas",
-        "Necesidad/desafío tecnológico",
-        "Contexto tecnológico preliminar"
+        "Temática específica",
+        "Necesidad/desafío tecnológico"
     ]
     
     columnas_existentes = [col for col in columnas_a_mostrar if col in df_necesidades.columns]
