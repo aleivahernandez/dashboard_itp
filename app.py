@@ -123,23 +123,28 @@ with col1:
         st.subheader("Frecuencia de Ejes")
         
         if not df_filtrado_general.empty:
-            # Procesamiento específico para el gráfico de radar
-            df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
-            # Usar todos los ejes del dataframe original para asegurar la continuidad de la línea "Total"
-            all_ejes = df_necesidades[columna_ejes].unique()
+            # Procesamiento de datos para las regiones individuales
+            df_counts_region = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+            all_ejes = df_necesidades[columna_ejes].unique() # Usar todos los ejes posibles
             all_regiones_filtradas = df_filtrado_general[columna_region].unique()
             
+            df_para_grafico = pd.DataFrame() # Iniciar dataframe vacío
+
             if len(all_regiones_filtradas) > 0:
-                full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
-                df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
+                full_grid_region = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
+                df_radar_regions = pd.merge(full_grid_region, df_counts_region, on=[columna_region, columna_ejes], how='left').fillna(0)
+                df_para_grafico = pd.concat([df_para_grafico, df_radar_regions])
 
-                # Calcular el total para las regiones seleccionadas
-                df_total = df_radar.groupby(columna_ejes, as_index=False)['Cantidad'].sum()
-                df_total[columna_region] = 'Total'
-                
-                # Combinar datos de regiones con el total
-                df_para_grafico = pd.concat([df_radar, df_total], ignore_index=True)
+            # Procesamiento de datos para la línea "Total"
+            df_counts_total = df_filtrado_general.groupby(columna_ejes).size().reset_index(name='Cantidad')
+            all_ejes_df = pd.DataFrame({columna_ejes: all_ejes})
+            df_total = pd.merge(all_ejes_df, df_counts_total, on=columna_ejes, how='left').fillna(0)
+            df_total[columna_region] = 'Total'
+            
+            # Combinar datos de regiones con el total
+            df_para_grafico = pd.concat([df_para_grafico, df_total], ignore_index=True)
 
+            if not df_para_grafico.empty:
                 fig_radar = px.line_polar(
                     df_para_grafico, r='Cantidad', theta=columna_ejes, color=columna_region,
                     color_discrete_map=color_map, line_close=True, markers=True,
