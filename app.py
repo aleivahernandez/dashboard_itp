@@ -176,7 +176,8 @@ with col2:
             # 1. Añadir una columna de tamaño constante para que todos los sectores sean iguales
             df_sunburst_display['size'] = 1
             
-            # 2. Aplicar el ajuste de texto a las etiquetas de temática
+            # 2. Aplicar el ajuste de texto a todas las etiquetas de texto
+            df_sunburst_display[columna_ejes] = df_sunburst_display[columna_ejes].apply(lambda x: wrap_text_manual(str(x)))
             df_sunburst_display[columna_tematica] = df_sunburst_display[columna_tematica].apply(lambda x: wrap_text_manual(str(x)))
 
             fig_sunburst = px.sunburst(
