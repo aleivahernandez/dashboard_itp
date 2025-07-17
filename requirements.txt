@@ -1,6 +1,4 @@
 streamlit
 pandas
-geopandas
 plotly
 openpyxl
-streamlit-plotly-events
