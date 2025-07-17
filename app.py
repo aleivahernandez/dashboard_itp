@@ -1,17 +1,15 @@
 # -----------------------------------------------------------------------------
-# app.py - Dashboard Interactivo de Regiones de Chile (Versión Silueta)
+# app.py - Dashboard con Gráfico de Radar
 # -----------------------------------------------------------------------------
 # Importación de librerías necesarias
 import streamlit as st
 import pandas as pd
-import geopandas as gpd
 import plotly.express as px
-from streamlit_plotly_events import plotly_events # Librería para capturar eventos del mapa
 
 # --- Configuración de la Página ---
 st.set_page_config(
-    page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="c🇱",
+    page_title="Dashboard de Ejes Priorizados",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -30,99 +28,78 @@ def cargar_datos_excel(archivo_excel):
         st.error(f"Ocurrió un error al leer el archivo Excel: {e}")
         st.stop()
 
-@st.cache_data
-def cargar_mapa_chile():
-    """Carga el archivo GeoJSON con las geometrías de las regiones de Chile."""
-    nombre_archivo_mapa = "regiones_chile.geojson"
-    try:
-        gdf = gpd.read_file(nombre_archivo_mapa)
-        if 'nombre' in gdf.columns:
-            gdf.rename(columns={'nombre': 'Region'}, inplace=True)
-        # Se necesita reproyectar para que px.choropleth lo muestre correctamente
-        gdf = gdf.to_crs(epsg=4326)
-        return gdf
-    except FileNotFoundError:
-        st.error(f"Error: No se encontró el archivo del mapa '{nombre_archivo_mapa}'.")
-        st.error("Por favor, asegúrate de que el archivo esté en tu repositorio de GitHub y que el nombre sea correcto.")
-        st.stop()
-    except Exception as e:
-        st.error(f"Ocurrió un error al leer el archivo del mapa: {e}")
-        st.stop()
-
 # --- Carga y Preparación de Datos ---
 
 nombre_archivo_excel = "Consolidado regiones piloto (necesidades tecnológicas).xlsx"
 df_necesidades = cargar_datos_excel(nombre_archivo_excel)
-gdf_mapa_chile = cargar_mapa_chile()
-
-datos_completos_mapa = gdf_mapa_chile.merge(
-    df_necesidades,
-    left_on='Region',
-    right_on='Región',
-    how='left'
-)
 
 # --- Interfaz de Usuario del Dashboard ---
 
-st.title("🗺️ Dashboard de Necesidades Tecnológicas por Región")
-st.markdown("Haz clic sobre una región en el mapa para filtrar la información.")
+st.title("📊 Dashboard de Ejes Traccionantes por Región")
+st.markdown("Este dashboard visualiza la frecuencia de las dimensiones priorizadas en cada región piloto.")
 
-# --- Mapa de Silueta como Filtro ---
+# --- Procesamiento de Datos para el Gráfico de Radar ---
 
-st.subheader("Mapa de Chile")
-# Usamos px.choropleth en lugar de px.choropleth_mapbox para crear la silueta
-fig = px.choropleth(
-    datos_completos_mapa,
-    geojson=datos_completos_mapa.geometry,
-    locations=datos_completos_mapa.index,
-    color="Region",
-    hover_name="Region",
-    projection="mercator" # Proyección para visualizar correctamente
+# Validar que las columnas necesarias existan en el DataFrame
+columna_ejes = "Ejes traccionantes/dimensiones priorizadas"
+columna_region = "Región"
+
+if columna_ejes not in df_necesidades.columns or columna_region not in df_necesidades.columns:
+    st.error(f"El archivo Excel debe contener las columnas '{columna_ejes}' y '{columna_region}'.")
+    st.stop()
+
+# Agrupar por región y por eje para contar la frecuencia de cada uno
+df_radar = df_necesidades.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+
+# --- Filtros Interactivos ---
+
+st.sidebar.header("Filtros")
+regiones_seleccionadas = st.sidebar.multiselect(
+    "Selecciona una o más regiones para visualizar:",
+    options=df_radar[columna_region].unique(),
+    default=df_radar[columna_region].unique() # Por defecto, todas seleccionadas
 )
 
-# Ajustes para que se vea como una silueta y no como un mapa geográfico
-fig.update_geos(
-    fitbounds="locations", # Centra el mapa en las geometrías de Chile
-    visible=False # Oculta el mapa base, los ejes y las fronteras
-)
-fig.update_layout(
-    height=700,
-    margin={"r":0, "t":0, "l":0, "b":0},
-    coloraxis_showscale=False # Oculta la leyenda de colores
-)
-
-# Usamos plotly_events para capturar los clics en el mapa
-selected_points = plotly_events(fig, click_event=True, key="map_click_silhouette")
-
-# --- Lógica de Filtro y Visualización de la Tabla ---
-
-# Inicializamos el estado de la sesión para guardar la selección
-if 'region_seleccionada' not in st.session_state:
-    st.session_state.region_seleccionada = None
-
-# Si el usuario hace clic en el mapa, actualizamos el estado
-if selected_points:
-    clicked_index = selected_points[0]['pointNumber']
-    st.session_state.region_seleccionada = datos_completos_mapa.iloc[clicked_index]['Region']
-
-# Botón para limpiar la selección y mostrar todos los datos
-if st.button("Limpiar filtro y mostrar todas las regiones"):
-    st.session_state.region_seleccionada = None
-    st.rerun()
-
-st.subheader("Detalle de Datos")
-
-# Si hay una región seleccionada en el estado de la sesión...
-if st.session_state.region_seleccionada:
-    region = st.session_state.region_seleccionada
-    df_filtrado = df_necesidades[df_necesidades['Región'] == region]
-
-    if not df_filtrado.empty:
-        st.write(f"Mostrando datos para la región de **{region}**:")
-        st.dataframe(df_filtrado)
-    else:
-        st.info(f"No hay datos disponibles en el archivo para la región de **{region}**.")
+# Filtrar el dataframe basado en la selección
+if regiones_seleccionadas:
+    df_filtrado = df_radar[df_radar[columna_region].isin(regiones_seleccionadas)]
 else:
-    # Si no se ha seleccionado ninguna región, mostramos la tabla completa
-    st.write("Mostrando todos los datos disponibles. Haz clic en una región para filtrar.")
+    df_filtrado = df_radar # Si no se selecciona nada, mostrar todo (aunque el default lo evita)
+
+
+# --- Visualización del Gráfico de Radar ---
+
+st.subheader("Gráfico de Radar: Frecuencia de Dimensiones Priorizadas")
+
+if not df_filtrado.empty:
+    # Crear el gráfico de radar (line_polar)
+    fig = px.line_polar(
+        df_filtrado,
+        r='Cantidad',  # El valor numérico (radio)
+        theta=columna_ejes,  # Las categorías en el perímetro (ejes)
+        color=columna_region,  # Una línea de color por cada región
+        line_close=True,  # Cierra el polígono para formar el radar
+        markers=True, # Muestra puntos en cada eje para mayor claridad
+        title="Comparativa de Ejes Priorizados por Región"
+    )
+
+    fig.update_layout(
+        height=600
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No hay datos para mostrar con las regiones seleccionadas. Por favor, elige al menos una región en el filtro de la barra lateral.")
+
+
+# --- Visualización de la Tabla de Datos ---
+
+with st.expander("Ver datos tabulados"):
+    st.write("Datos procesados para la generación del gráfico:")
+    # Mostrar la tabla de datos procesados que alimenta el gráfico
+    st.dataframe(df_filtrado)
+
+    st.write("Datos originales del archivo Excel:")
+    # Mostrar la tabla original completa
     st.dataframe(df_necesidades)
+
