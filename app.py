@@ -10,7 +10,7 @@ from itertools import product
 # --- Configuración de la Página ---
 st.set_page_config(
     page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="�",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -206,4 +206,3 @@ with st.expander("Ver datos originales"):
     df_display[columna_innovacion] = df_display[columna_innovacion].map(innovacion_map).fillna("N/A")
     
     st.dataframe(df_display)
-�
