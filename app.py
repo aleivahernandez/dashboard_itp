@@ -112,7 +112,8 @@ with col1:
             color_discrete_map=color_map,
             line_close=True,
             markers=True,
-            title="Comparativa de Ejes Priorizados por Región"
+            title="Comparativa de Ejes Priorizados por Región",
+            template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
         )
         fig_radar.update_traces(fill='toself', opacity=0.4)
         fig_radar.update_layout(height=600)
@@ -138,7 +139,8 @@ with col2:
                 path=[columna_region, columna_ejes, columna_necesidad],
                 color=columna_region, # Aplicar color por región
                 color_discrete_map=color_map, # Usar el mismo mapa de colores
-                title="Desglose de Necesidades por Región y Eje"
+                title="Desglose de Necesidades por Región y Eje",
+                template="streamlit" # Usar el tema de Streamlit para auto-ajuste a modo oscuro/claro
             )
             # Forzar que todo el texto DENTRO de los sectores siga la dirección de la barra (radial)
             fig_sunburst.update_traces(insidetextorientation='radial')
