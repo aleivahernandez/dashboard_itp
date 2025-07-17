@@ -104,6 +104,10 @@ if not df_filtrado.empty:
         title="Comparativa de Ejes Priorizados por Región"
     )
 
+    # AÑADIR RELLENO DE COLOR A LAS ÁREAS DEL GRÁFICO
+    # Se establece un relleno y una opacidad para ver las superposiciones
+    fig.update_traces(fill='toself', opacity=0.4)
+
     fig.update_layout(
         height=600
     )
