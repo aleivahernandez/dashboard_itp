@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Funciones de Carga de Datos (con caché para mejorar rendimiento) ---
+# --- Funciones de Carga y Ayuda ---
 
 @st.cache_data
 def cargar_datos_excel(archivo_excel):
@@ -38,6 +38,23 @@ def cargar_datos_excel(archivo_excel):
     except Exception as e:
         st.error(f"Ocurrió un error al leer el archivo Excel: {e}")
         st.stop()
+
+def wrap_text_manual(text, width=25):
+    """Divide un texto largo en múltiples líneas insertando <br> tags."""
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+    for word in words:
+        if len(current_line) + len(word) + 1 > width:
+            lines.append(current_line)
+            current_line = word
+        else:
+            if current_line:
+                current_line += " " + word
+            else:
+                current_line = word
+    lines.append(current_line)
+    return '<br>'.join(lines)
 
 # --- Carga y Preparación de Datos ---
 
@@ -64,7 +81,6 @@ columnas_requeridas = [columna_ejes, columna_region, columna_tematica, columna_n
 for col in columnas_requeridas:
     if col not in df_necesidades.columns:
         st.error(f"Error: La columna requerida '{col}' no se encontró en la hoja 'db' del archivo Excel.")
-        # Mensaje de depuración mejorado: muestra las columnas que SÍ se encontraron
         st.warning(f"Las columnas encontradas en el archivo son: {list(df_necesidades.columns)}")
         st.info("Sugerencia: Verifica que el nombre de la columna en el archivo Excel sea exactamente igual (incluyendo mayúsculas y espacios). Si acabas de subir el archivo, intenta limpiar la caché de la app (Manage app -> Clear cache).")
         st.stop()
@@ -79,13 +95,11 @@ regiones_seleccionadas = st.sidebar.multiselect(
     default=list(df_necesidades[columna_region].unique()) # Por defecto, todas seleccionadas
 )
 
-# Obtener todas las categorías tecnológicas únicas para el nuevo filtro
 all_categorias = sorted(df_necesidades[columna_categorias_tec].str.split(',').explode().str.strip().unique())
-
 categorias_seleccionadas = st.sidebar.multiselect(
     "Filtrar por Categoría Tecnológica:",
     options=all_categorias,
-    default=[] # Por defecto, ninguna seleccionada
+    default=[]
 )
 
 
@@ -95,10 +109,7 @@ if regiones_seleccionadas:
 else:
     df_filtrado_general = df_necesidades.copy()
 
-# Aplicar el segundo filtro de categorías tecnológicas si se ha seleccionado alguna
 if categorias_seleccionadas:
-    # Se itera sobre cada categoría seleccionada para construir una máscara booleana.
-    # Esto asegura que la búsqueda sea por contenido ("contains") y no por coincidencia exacta.
     mask = df_filtrado_general[columna_categorias_tec].apply(
         lambda x: any(cat in str(x) for cat in categorias_seleccionadas)
     )
@@ -109,39 +120,34 @@ if categorias_seleccionadas:
 
 col1, col2, col3 = st.columns(3)
 
-# Definir un mapa de colores personalizado con tonos pastel
 color_map = {
-    'Maule': '#fbb4ae',      # Rojo Pastel
-    'Coquimbo': '#fed9a6',   # Amarillo Pastel
-    'Los Lagos': '#b3e2cd',  # Verde Pastel
-    'Total': '#c5b0d5'       # Morado Pastel para el total
+    'Maule': '#fbb4ae',
+    'Coquimbo': '#fed9a6',
+    'Los Lagos': '#b3e2cd',
+    'Total': '#c5b0d5'
 }
 
 with col1:
     with st.container(border=True):
-        # --- Visualización del Gráfico de Radar ---
         st.subheader("Frecuencia de Ejes")
         
         if not df_filtrado_general.empty:
-            # Procesamiento de datos para las regiones individuales
             df_counts_region = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
-            all_ejes = df_necesidades[columna_ejes].unique() # Usar todos los ejes posibles
+            all_ejes = df_necesidades[columna_ejes].unique()
             all_regiones_filtradas = df_filtrado_general[columna_region].unique()
             
-            df_para_grafico = pd.DataFrame() # Iniciar dataframe vacío
+            df_para_grafico = pd.DataFrame()
 
             if len(all_regiones_filtradas) > 0:
                 full_grid_region = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
                 df_radar_regions = pd.merge(full_grid_region, df_counts_region, on=[columna_region, columna_ejes], how='left').fillna(0)
                 df_para_grafico = pd.concat([df_para_grafico, df_radar_regions])
 
-            # Procesamiento de datos para la línea "Total"
             df_counts_total = df_filtrado_general.groupby(columna_ejes).size().reset_index(name='Cantidad')
             all_ejes_df = pd.DataFrame({columna_ejes: all_ejes})
             df_total = pd.merge(all_ejes_df, df_counts_total, on=columna_ejes, how='left').fillna(0)
             df_total[columna_region] = 'Total'
             
-            # Combinar datos de regiones con el total
             df_para_grafico = pd.concat([df_para_grafico, df_total], ignore_index=True)
 
             if not df_para_grafico.empty:
@@ -161,13 +167,24 @@ with col1:
 
 with col2:
     with st.container(border=True):
-        # --- Visualización del Gráfico Solar ---
         st.subheader("Desglose de Temáticas")
         
         if not df_filtrado_general.empty:
+            # Crear una copia para modificar los datos solo para este gráfico
+            df_sunburst_display = df_filtrado_general.copy()
+            
+            # 1. Añadir una columna de tamaño constante para que todos los sectores sean iguales
+            df_sunburst_display['size'] = 1
+            
+            # 2. Aplicar el ajuste de texto a las etiquetas de temática
+            df_sunburst_display[columna_tematica] = df_sunburst_display[columna_tematica].apply(lambda x: wrap_text_manual(str(x)))
+
             fig_sunburst = px.sunburst(
-                df_filtrado_general, path=[columna_region, columna_ejes, columna_tematica],
-                color=columna_region, color_discrete_map=color_map,
+                df_sunburst_display, 
+                path=[columna_region, columna_ejes, columna_tematica],
+                values='size', # Usar el tamaño constante
+                color=columna_region, 
+                color_discrete_map=color_map,
                 template="streamlit"
             )
             fig_sunburst.update_traces(insidetextorientation='radial')
@@ -178,7 +195,6 @@ with col2:
 
 with col3:
     with st.container(border=True):
-        # --- Visualización del Gráfico de Barras ---
         st.subheader("Frecuencia de Categorías")
 
         if not df_filtrado_general.empty:
