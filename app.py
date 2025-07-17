@@ -10,7 +10,7 @@ from itertools import product
 # --- Configuración de la Página ---
 st.set_page_config(
     page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="📊",
+    page_icon="�",
     layout="wide"
 )
 
@@ -73,16 +73,33 @@ for col in columnas_requeridas:
 
 st.sidebar.header("Filtros")
 regiones_seleccionadas = st.sidebar.multiselect(
-    "Selecciona una o más regiones para visualizar:",
+    "Filtrar por Región:",
     options=df_necesidades[columna_region].unique(),
     default=list(df_necesidades[columna_region].unique()) # Por defecto, todas seleccionadas
 )
+
+# Obtener todas las categorías tecnológicas únicas para el nuevo filtro
+all_categorias = sorted(df_necesidades[columna_categorias_tec].str.split(',').explode().str.strip().unique())
+
+categorias_seleccionadas = st.sidebar.multiselect(
+    "Filtrar por Categoría Tecnológica:",
+    options=all_categorias,
+    default=[] # Por defecto, ninguna seleccionada
+)
+
 
 # --- Filtrado General de Datos ---
 if regiones_seleccionadas:
     df_filtrado_general = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
 else:
     df_filtrado_general = df_necesidades.copy()
+
+# Aplicar el segundo filtro de categorías tecnológicas si se ha seleccionado alguna
+if categorias_seleccionadas:
+    # Crear un patrón de búsqueda para encontrar filas que contengan CUALQUIERA de las categorías seleccionadas
+    pattern = '|'.join(f'({cat})' for cat in categorias_seleccionadas)
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_categorias_tec].str.contains(pattern, na=False)]
+
 
 # --- Visualización de Gráficos en Columnas ---
 
@@ -100,24 +117,27 @@ with col1:
         # --- Visualización del Gráfico de Radar ---
         st.subheader("Frecuencia de Ejes")
         
-        # Procesamiento específico para el gráfico de radar
-        df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
-        all_ejes = df_filtrado_general[columna_ejes].unique()
-        all_regiones_filtradas = df_filtrado_general[columna_region].unique()
-        full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
-        df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
+        if not df_filtrado_general.empty:
+            df_counts = df_filtrado_general.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+            all_ejes = df_filtrado_general[columna_ejes].unique()
+            all_regiones_filtradas = df_filtrado_general[columna_region].unique()
+            full_grid = pd.DataFrame(list(product(all_regiones_filtradas, all_ejes)), columns=[columna_region, columna_ejes])
+            df_radar = pd.merge(full_grid, df_counts, on=[columna_region, columna_ejes], how='left').fillna(0)
 
-        if not df_radar.empty:
-            fig_radar = px.line_polar(
-                df_radar, r='Cantidad', theta=columna_ejes, color=columna_region,
-                color_discrete_map=color_map, line_close=True, markers=True,
-                template="streamlit"
-            )
-            fig_radar.update_traces(fill='toself', opacity=0.5) # Aumentar un poco la opacidad para pasteles
-            fig_radar.update_layout(height=400, hoverlabel=dict(align='left'))
-            st.plotly_chart(fig_radar, use_container_width=True)
+            if not df_radar.empty:
+                fig_radar = px.line_polar(
+                    df_radar, r='Cantidad', theta=columna_ejes, color=columna_region,
+                    color_discrete_map=color_map, line_close=True, markers=True,
+                    template="streamlit"
+                )
+                fig_radar.update_traces(fill='toself', opacity=0.5)
+                fig_radar.update_layout(height=400, hoverlabel=dict(align='left'))
+                st.plotly_chart(fig_radar, use_container_width=True)
+            else:
+                st.warning("Sin datos para el gráfico de radar con los filtros actuales.")
         else:
-            st.warning("Sin datos para el gráfico de radar.")
+            st.warning("Sin datos para mostrar con los filtros seleccionados.")
+
 
 with col2:
     with st.container(border=True):
@@ -134,52 +154,36 @@ with col2:
             fig_sunburst.update_layout(height=400, hoverlabel=dict(align='left'))
             st.plotly_chart(fig_sunburst, use_container_width=True)
         else:
-            st.info("Sin datos para el gráfico solar.")
+            st.info("Sin datos para el gráfico solar con los filtros actuales.")
 
 with col3:
     with st.container(border=True):
         # --- Visualización del Gráfico de Barras ---
         st.subheader("Frecuencia de Categorías")
 
-        # Procesamiento para el gráfico de barras
-        df_categorias = df_filtrado_general.dropna(subset=[columna_categorias_tec])
-        if not df_categorias.empty:
+        if not df_filtrado_general.empty:
+            df_categorias = df_filtrado_general.dropna(subset=[columna_categorias_tec])
             categorias = df_categorias[columna_categorias_tec].str.split(',').explode().str.strip()
             df_bar_counts = categorias.value_counts().reset_index()
             df_bar_counts.columns = ['Categoría', 'Frecuencia']
             
-            # Crear una columna con etiquetas truncadas para el eje Y
             df_bar_counts['Etiqueta_Truncada'] = df_bar_counts['Categoría'].apply(lambda x: (x[:15] + '...') if len(x) > 15 else x)
-            
-            # Ordenar los datos para una mejor visualización horizontal
             df_bar_counts = df_bar_counts.sort_values('Frecuencia', ascending=True)
 
             fig_bar = px.bar(
-                df_bar_counts, 
-                y='Categoría', # Usar la categoría original y única para el eje Y para evitar superposiciones
-                x='Frecuencia',
-                orientation='h',
-                color='Frecuencia', # Asignar color según la frecuencia
-                color_continuous_scale=px.colors.sequential.GnBu, # Paleta monocromática con buen contraste
-                text='Frecuencia', # Añadir el valor numérico a cada barra
-                hover_name='Categoría', # Mostrar nombre completo al pasar el mouse
-                template="streamlit"
+                df_bar_counts, y='Categoría', x='Frecuencia', orientation='h',
+                color='Frecuencia', color_continuous_scale=px.colors.sequential.GnBu,
+                text='Frecuencia', hover_name='Categoría', template="streamlit"
             )
-            # Ocultar la leyenda de colores (redundante) y ajustar layout
             fig_bar.update_layout(
-                height=400, 
-                hoverlabel=dict(align='left'),
-                coloraxis_showscale=False, # Ocultar la barra de escala de colores
-                yaxis_title=None, # Ocultar el título del eje Y
-                xaxis_visible=False # Ocultar el eje X (Frecuencia)
+                height=400, hoverlabel=dict(align='left'), coloraxis_showscale=False,
+                yaxis_title=None, xaxis_visible=False
             )
-            # Usar las etiquetas truncadas solo para la visualización del eje Y
             fig_bar.update_yaxes(ticktext=df_bar_counts['Etiqueta_Truncada'], tickvals=df_bar_counts['Categoría'])
-            # Ajustar la posición y estilo del texto en las barras
             fig_bar.update_traces(textposition='outside', textfont_size=12)
             st.plotly_chart(fig_bar, use_container_width=True)
         else:
-            st.info("Sin datos para el gráfico de barras.")
+            st.info("Sin datos para el gráfico de barras con los filtros actuales.")
 
 
 # --- Visualización de la Tabla de Datos ---
@@ -195,20 +199,11 @@ with st.expander("Ver datos originales"):
     
     df_display = df_filtrado_general[columnas_a_mostrar].copy()
 
-    # Mapeo para Impacto Potencial (Azules)
-    impacto_map = {
-        5: "🔵 Alto",
-        3: "🔷 Medio",
-        1: "⚪ Bajo"
-    }
-    # Mapeo para Nivel de Innovación (Naranjos)
-    innovacion_map = {
-        5: "🟠 Alto",
-        3: "🔶 Medio",
-        1: "🔸 Bajo"
-    }
+    impacto_map = { 5: "🔵 Alto", 3: "🔷 Medio", 1: "⚪ Bajo" }
+    innovacion_map = { 5: "🟠 Alto", 3: "🔶 Medio", 1: "🔸 Bajo" }
 
     df_display[columna_impacto] = df_display[columna_impacto].map(impacto_map).fillna("N/A")
     df_display[columna_innovacion] = df_display[columna_innovacion].map(innovacion_map).fillna("N/A")
     
     st.dataframe(df_display)
+�
