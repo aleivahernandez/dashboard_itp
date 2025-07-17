@@ -5,6 +5,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from itertools import product
 
 # --- Configuración de la Página ---
 st.set_page_config(
@@ -49,7 +50,27 @@ if columna_ejes not in df_necesidades.columns or columna_region not in df_necesi
     st.stop()
 
 # Agrupar por región y por eje para contar la frecuencia de cada uno
-df_radar = df_necesidades.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+df_counts = df_necesidades.groupby([columna_region, columna_ejes]).size().reset_index(name='Cantidad')
+
+# --- CREACIÓN DE DATOS COMPLETOS PARA LÍNEAS CONTINUAS ---
+# Obtener todas las categorías únicas para los ejes y las regiones
+all_ejes = df_necesidades[columna_ejes].unique()
+all_regiones = df_necesidades[columna_region].unique()
+
+# Crear una grilla con todas las combinaciones posibles de región y eje
+full_grid = pd.DataFrame(list(product(all_regiones, all_ejes)), columns=[columna_region, columna_ejes])
+
+# Unir la grilla completa con los conteos reales
+df_radar = pd.merge(
+    full_grid,
+    df_counts,
+    on=[columna_region, columna_ejes],
+    how='left'
+)
+
+# Rellenar con 0 las combinaciones que no tenían datos
+df_radar['Cantidad'] = df_radar['Cantidad'].fillna(0)
+
 
 # --- Filtros Interactivos ---
 
@@ -57,14 +78,14 @@ st.sidebar.header("Filtros")
 regiones_seleccionadas = st.sidebar.multiselect(
     "Selecciona una o más regiones para visualizar:",
     options=df_radar[columna_region].unique(),
-    default=df_radar[columna_region].unique() # Por defecto, todas seleccionadas
+    default=list(df_radar[columna_region].unique()) # Por defecto, todas seleccionadas
 )
 
 # Filtrar el dataframe basado en la selección
 if regiones_seleccionadas:
     df_filtrado = df_radar[df_radar[columna_region].isin(regiones_seleccionadas)]
 else:
-    df_filtrado = df_radar # Si no se selecciona nada, mostrar todo (aunque el default lo evita)
+    df_filtrado = df_radar.copy()
 
 
 # --- Visualización del Gráfico de Radar ---
@@ -75,11 +96,11 @@ if not df_filtrado.empty:
     # Crear el gráfico de radar (line_polar)
     fig = px.line_polar(
         df_filtrado,
-        r='Cantidad',  # El valor numérico (radio)
-        theta=columna_ejes,  # Las categorías en el perímetro (ejes)
+        r='Cantidad',          # El valor numérico (radio)
+        theta=columna_ejes,    # Las categorías en el perímetro (ejes)
         color=columna_region,  # Una línea de color por cada región
-        line_close=True,  # Cierra el polígono para formar el radar
-        markers=True, # Muestra puntos en cada eje para mayor claridad
+        line_close=True,       # Cierra el polígono para formar el radar
+        markers=True,          # Muestra puntos en cada eje para mayor claridad
         title="Comparativa de Ejes Priorizados por Región"
     )
 
@@ -95,11 +116,10 @@ else:
 # --- Visualización de la Tabla de Datos ---
 
 with st.expander("Ver datos tabulados"):
-    st.write("Datos procesados para la generación del gráfico:")
+    st.write("Datos procesados para la generación del gráfico (con ceros para datos faltantes):")
     # Mostrar la tabla de datos procesados que alimenta el gráfico
     st.dataframe(df_filtrado)
 
     st.write("Datos originales del archivo Excel:")
     # Mostrar la tabla original completa
     st.dataframe(df_necesidades)
-
