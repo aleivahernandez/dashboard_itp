@@ -114,12 +114,6 @@ tematicas_seleccionadas = st.sidebar.multiselect(
     default=[]
 )
 
-necesidades_seleccionadas = st.sidebar.multiselect(
-    "Filtrar por Necesidad:",
-    options=sorted(df_necesidades[columna_necesidad].unique()),
-    default=[]
-)
-
 impacto_options = ["Alto", "Medio", "Bajo"]
 impacto_map_reverse = { "Alto": 5, "Medio": 3, "Bajo": 1 }
 impacto_seleccionado = st.sidebar.multiselect(
@@ -154,9 +148,6 @@ if ejes_seleccionados:
 
 if tematicas_seleccionadas:
     df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_tematica].isin(tematicas_seleccionadas)]
-
-if necesidades_seleccionadas:
-    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_necesidad].isin(necesidades_seleccionadas)]
 
 if impacto_seleccionado:
     valores_impacto = [impacto_map_reverse[val] for val in impacto_seleccionado]
