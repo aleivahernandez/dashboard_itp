@@ -93,12 +93,21 @@ else:
 st.subheader("Gráfico de Radar: Frecuencia de Dimensiones Priorizadas")
 
 if not df_filtrado_radar.empty:
+    # Definir un mapa de colores personalizado para mejorar la visibilidad
+    color_map = {
+        'Maule': '#E45756',      # Rojo
+        'Coquimbo': '#4C78A8',   # Azul
+        'Los Lagos': '#54A24B'   # Verde
+        # Puedes añadir más regiones y colores aquí si es necesario
+    }
+
     # Crear el gráfico de radar (line_polar)
     fig = px.line_polar(
         df_filtrado_radar,
         r='Cantidad',          # El valor numérico (radio)
         theta=columna_ejes,    # Las categorías en el perímetro (ejes)
         color=columna_region,  # Una línea de color por cada región
+        color_discrete_map=color_map, # APLICAR EL MAPA DE COLORES PERSONALIZADO
         line_close=True,       # Cierra el polígono para formar el radar
         markers=True,          # Muestra puntos en cada eje para mayor claridad
         title="Comparativa de Ejes Priorizados por Región"
