@@ -102,18 +102,69 @@ categorias_seleccionadas = st.sidebar.multiselect(
     default=[]
 )
 
+ejes_seleccionados = st.sidebar.multiselect(
+    "Filtrar por Eje:",
+    options=sorted(df_necesidades[columna_ejes].unique()),
+    default=[]
+)
+
+tematicas_seleccionadas = st.sidebar.multiselect(
+    "Filtrar por Temática:",
+    options=sorted(df_necesidades[columna_tematica].unique()),
+    default=[]
+)
+
+necesidades_seleccionadas = st.sidebar.multiselect(
+    "Filtrar por Necesidad:",
+    options=sorted(df_necesidades[columna_necesidad].unique()),
+    default=[]
+)
+
+impacto_options = ["Alto", "Medio", "Bajo"]
+impacto_map_reverse = { "Alto": 5, "Medio": 3, "Bajo": 1 }
+impacto_seleccionado = st.sidebar.multiselect(
+    "Filtrar por Impacto Potencial:",
+    options=impacto_options,
+    default=[]
+)
+
+innovacion_options = ["Alto", "Medio", "Bajo"]
+innovacion_map_reverse = { "Alto": 5, "Medio": 3, "Bajo": 1 }
+innovacion_seleccionada = st.sidebar.multiselect(
+    "Filtrar por Nivel de Innovación:",
+    options=innovacion_options,
+    default=[]
+)
+
 
 # --- Filtrado General de Datos ---
+df_filtrado_general = df_necesidades.copy()
+
 if regiones_seleccionadas:
-    df_filtrado_general = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
-else:
-    df_filtrado_general = df_necesidades.copy()
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_region].isin(regiones_seleccionadas)]
 
 if categorias_seleccionadas:
     mask = df_filtrado_general[columna_categorias_tec].apply(
         lambda x: any(cat in str(x) for cat in categorias_seleccionadas)
     )
     df_filtrado_general = df_filtrado_general[mask]
+
+if ejes_seleccionados:
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_ejes].isin(ejes_seleccionados)]
+
+if tematicas_seleccionadas:
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_tematica].isin(tematicas_seleccionadas)]
+
+if necesidades_seleccionadas:
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_necesidad].isin(necesidades_seleccionadas)]
+
+if impacto_seleccionado:
+    valores_impacto = [impacto_map_reverse[val] for val in impacto_seleccionado]
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_impacto].isin(valores_impacto)]
+
+if innovacion_seleccionada:
+    valores_innovacion = [innovacion_map_reverse[val] for val in innovacion_seleccionada]
+    df_filtrado_general = df_filtrado_general[df_filtrado_general[columna_innovacion].isin(valores_innovacion)]
 
 
 # --- Visualización de Gráficos en Columnas ---
@@ -170,20 +221,15 @@ with col2:
         st.subheader("Desglose de Temáticas")
         
         if not df_filtrado_general.empty:
-            # Crear una copia para modificar los datos solo para este gráfico
             df_sunburst_display = df_filtrado_general.copy()
-            
-            # 1. Añadir una columna de tamaño constante para que todos los sectores sean iguales
             df_sunburst_display['size'] = 1
-            
-            # 2. Aplicar el ajuste de texto a todas las etiquetas de texto
             df_sunburst_display[columna_ejes] = df_sunburst_display[columna_ejes].apply(lambda x: wrap_text_manual(str(x)))
             df_sunburst_display[columna_tematica] = df_sunburst_display[columna_tematica].apply(lambda x: wrap_text_manual(str(x)))
 
             fig_sunburst = px.sunburst(
                 df_sunburst_display, 
                 path=[columna_region, columna_ejes, columna_tematica],
-                values='size', # Usar el tamaño constante
+                values='size',
                 color=columna_region, 
                 color_discrete_map=color_map,
                 template="streamlit"
