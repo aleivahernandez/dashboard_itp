@@ -81,21 +81,21 @@ regiones_seleccionadas = st.sidebar.multiselect(
     default=list(df_radar[columna_region].unique()) # Por defecto, todas seleccionadas
 )
 
-# Filtrar el dataframe basado en la selección
+# Filtrar el dataframe del radar basado en la selección
 if regiones_seleccionadas:
-    df_filtrado = df_radar[df_radar[columna_region].isin(regiones_seleccionadas)]
+    df_filtrado_radar = df_radar[df_radar[columna_region].isin(regiones_seleccionadas)]
 else:
-    df_filtrado = df_radar.copy()
+    df_filtrado_radar = df_radar.copy()
 
 
 # --- Visualización del Gráfico de Radar ---
 
 st.subheader("Gráfico de Radar: Frecuencia de Dimensiones Priorizadas")
 
-if not df_filtrado.empty:
+if not df_filtrado_radar.empty:
     # Crear el gráfico de radar (line_polar)
     fig = px.line_polar(
-        df_filtrado,
+        df_filtrado_radar,
         r='Cantidad',          # El valor numérico (radio)
         theta=columna_ejes,    # Las categorías en el perímetro (ejes)
         color=columna_region,  # Una línea de color por cada región
@@ -134,5 +134,12 @@ with st.expander("Ver datos originales"):
     if len(columnas_existentes) < len(columnas_a_mostrar):
         st.warning("Algunas de las columnas solicitadas no se encontraron en el archivo Excel.")
     
-    # Mostrar la tabla original solo con las columnas seleccionadas
-    st.dataframe(df_necesidades[columnas_existentes])
+    # Filtrar la tabla de datos originales según la selección de la barra lateral
+    if regiones_seleccionadas:
+        df_tabla_filtrada = df_necesidades[df_necesidades[columna_region].isin(regiones_seleccionadas)]
+    else:
+        # Si no hay regiones seleccionadas, mostrar la tabla completa
+        df_tabla_filtrada = df_necesidades
+
+    # Mostrar la tabla original filtrada solo con las columnas seleccionadas
+    st.dataframe(df_tabla_filtrada[columnas_existentes])
