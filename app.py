@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# app.py - Dashboard Interactivo de Regiones de Chile
+# app.py - Dashboard Interactivo de Regiones de Chile (Versión Silueta)
 # -----------------------------------------------------------------------------
 # Importación de librerías necesarias
 import streamlit as st
@@ -11,7 +11,7 @@ from streamlit_plotly_events import plotly_events # Librería para capturar even
 # --- Configuración de la Página ---
 st.set_page_config(
     page_title="Dashboard de Necesidades Tecnológicas",
-    page_icon="🇨🇱",
+    page_icon="c🇱",
     layout="wide"
 )
 
@@ -38,6 +38,8 @@ def cargar_mapa_chile():
         gdf = gpd.read_file(nombre_archivo_mapa)
         if 'nombre' in gdf.columns:
             gdf.rename(columns={'nombre': 'Region'}, inplace=True)
+        # Se necesita reproyectar para que px.choropleth lo muestre correctamente
+        gdf = gdf.to_crs(epsg=4326)
         return gdf
     except FileNotFoundError:
         st.error(f"Error: No se encontró el archivo del mapa '{nombre_archivo_mapa}'.")
@@ -65,31 +67,32 @@ datos_completos_mapa = gdf_mapa_chile.merge(
 st.title("🗺️ Dashboard de Necesidades Tecnológicas por Región")
 st.markdown("Haz clic sobre una región en el mapa para filtrar la información.")
 
-# --- Mapa Interactivo como Filtro ---
+# --- Mapa de Silueta como Filtro ---
 
 st.subheader("Mapa de Chile")
-fig = px.choropleth_mapbox(
+# Usamos px.choropleth en lugar de px.choropleth_mapbox para crear la silueta
+fig = px.choropleth(
     datos_completos_mapa,
     geojson=datos_completos_mapa.geometry,
     locations=datos_completos_mapa.index,
     color="Region",
     hover_name="Region",
-    mapbox_style="carto-positron",
-    center={"lat": -38.4161, "lon": -72.3432},
-    zoom=3.5,
-    opacity=0.7,
-    height=600,
-    color_discrete_map={region: '#CCCCCC' for region in datos_completos_mapa['Region'].unique()} # Color gris por defecto
+    projection="mercator" # Proyección para visualizar correctamente
 )
-# Quitar la leyenda de colores que no es necesaria
+
+# Ajustes para que se vea como una silueta y no como un mapa geográfico
+fig.update_geos(
+    fitbounds="locations", # Centra el mapa en las geometrías de Chile
+    visible=False # Oculta el mapa base, los ejes y las fronteras
+)
 fig.update_layout(
+    height=700,
     margin={"r":0, "t":0, "l":0, "b":0},
-    showlegend=False
+    coloraxis_showscale=False # Oculta la leyenda de colores
 )
 
 # Usamos plotly_events para capturar los clics en el mapa
-# La 'key' es importante para que Streamlit mantenga el estado
-selected_points = plotly_events(fig, click_event=True, key="map_click")
+selected_points = plotly_events(fig, click_event=True, key="map_click_silhouette")
 
 # --- Lógica de Filtro y Visualización de la Tabla ---
 
@@ -99,15 +102,12 @@ if 'region_seleccionada' not in st.session_state:
 
 # Si el usuario hace clic en el mapa, actualizamos el estado
 if selected_points:
-    # El evento devuelve el índice del punto clickeado
     clicked_index = selected_points[0]['pointNumber']
-    # Obtenemos el nombre de la región a partir del índice
     st.session_state.region_seleccionada = datos_completos_mapa.iloc[clicked_index]['Region']
 
 # Botón para limpiar la selección y mostrar todos los datos
 if st.button("Limpiar filtro y mostrar todas las regiones"):
     st.session_state.region_seleccionada = None
-    # Forzar un re-run para que el cambio se refleje inmediatamente
     st.rerun()
 
 st.subheader("Detalle de Datos")
