@@ -94,7 +94,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     # --- Visualización del Gráfico de Radar ---
-    st.subheader("Gráfico de Radar: Frecuencia de Dimensiones")
+    st.subheader("Frecuencia de Dimensiones")
 
     if not df_filtrado_radar.empty:
         # Definir un mapa de colores personalizado para mejorar la visibilidad
@@ -122,7 +122,7 @@ with col1:
 
 with col2:
     # --- Visualización del Gráfico Solar ---
-    st.subheader("Gráfico Solar: Desglose de Necesidades")
+    st.subheader("Desglose de Necesidades")
 
     if columna_necesidad not in df_necesidades.columns:
         st.warning(f"La columna '{columna_necesidad}' no se encontró.")
